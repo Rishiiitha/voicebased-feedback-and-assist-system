@@ -7,44 +7,39 @@ import {
 } from 'react-router-dom';
 
 // --- 1. IMPORT ALL YOUR PAGE COMPONENTS ---
-import Dashboard from './Dashboard.jsx'; // Landing page
+import Dashboard from './Dashboard.jsx'; // Your landing/role selection page
 import Login from './Login.jsx';
-import ParentDashboard from './ParentDashboard.jsx';
+import MainDashboard from './MainDashboard.jsx'; // Your new Parent/Student UI
 import AdminDashboard from './AdminDashboard.jsx';
-import StudentDashboard from './StudentDashboard.jsx'; // Student main page
-import MainDashboard from './MainDashboard.jsx'; // Get Started -> Main Dashboard
-import Feedback from './FeedbackTab.jsx'; // NEW FEEDBACK PAGE
+import DepartmentDashboard from './DepartmentDashboard.jsx';
+import IntroPage from './IntroPage.jsx';
+import FeedbackTab from './FeedbackTab.jsx'; // The component, not a page
 
 function App() {
   const [selectedRole, setSelectedRole] = useState(null);
 
   // --- 2. WRAPPER COMPONENTS ---
 
-  // Home (Landing page)
-  function HomeWrapper() {
+  // Home (Landing page) - This seems to be your IntroPage now
+  // I will route "/" to IntroPage instead
+  
+  // Role Selection Page (This might be your old "Dashboard.jsx")
+  function RoleWrapper() {
     const navigate = useNavigate();
-
-    const handleRoleSelect = (page) => {
-      if (page === "user") {
-        navigate("/main-dashboard");
-      } else {
-        setSelectedRole(page);
-        navigate("/login");
-      }
+    const handleRoleSelect = (role) => {
+      setSelectedRole(role);
+      navigate('/login'); 
     };
-
     return <Dashboard onNavigateToLogin={handleRoleSelect} />;
   }
 
   // Login page
   function LoginWrapper() {
     const navigate = useNavigate();
-
     const handleBack = () => {
       setSelectedRole(null);
-      navigate('/');
+      navigate('/'); // Navigate back to the Intro page
     };
-
     return <Login selectedRole={selectedRole} onBack={handleBack} />;
   }
 
@@ -53,24 +48,37 @@ function App() {
     <Router>
       <Routes>
         {/* Main Landing Page */}
-        <Route path="/" element={<HomeWrapper />} />
+        <Route path="/" element={<IntroPage />} />
+
+        {/* Page to select role (if you still use it) */}
+        <Route path="/select-role" element={<RoleWrapper />} />
 
         {/* Login Page */}
         <Route path="/login" element={<LoginWrapper />} />
 
-        {/* --- Dashboard Routes --- */}
-        <Route path="/parent-dashboard" element={<ParentDashboard />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/dashboard" element={<StudentDashboard />} />
+        {/* --- Dashboard Routes (MUST match Login.jsx redirects) --- */}
+        <Route 
+          path="/parent-dashboard" 
+          element={<MainDashboard userRole="parent" />} 
+        />
+        <Route 
+          path="/student-dashboard" 
+          element={<MainDashboard userRole="student" />} 
+        />
+        <Route 
+          path="/admin-dashboard" 
+          element={<AdminDashboard />} 
+        />
+        <Route 
+          path="/department-dashboard" 
+          element={<DepartmentDashboard />} 
+        />
 
-        {/* ✅ New Feedback Route */}
-        <Route path="/feedback" element={<Feedback />} />
+        {/* This route is no longer needed as a page */}
+        {/* <Route path="/feedback" element={<FeedbackTab />} /> */}
 
-        {/* ✅ Main Dashboard (Get Started page) */}
-        <Route path="/main-dashboard" element={<MainDashboard />} />
-
-        {/* Fallback Route */}
-        <Route path="*" element={<HomeWrapper />} />
+        {/* Fallback Route: Send all unknown URLs to the intro page */}
+        <Route path="*" element={<IntroPage />} />
       </Routes>
     </Router>
   );

@@ -20,7 +20,7 @@ JWT_SECRET = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = "HS256"
 
 # --- Database Config ---
-# We now use the single connection string
+# We now use the single connection string from .env
 DB_URL = os.getenv("DB_URL_STANDARD")
 if not DB_URL:
     raise RuntimeError("DB_URL_STANDARD not set in .env file")
@@ -43,22 +43,29 @@ def get_db_connection():
         raise HTTPException(status_code=500, detail="Database connection error.")
 
 def assign_user_role(email: str) -> (str, str):
-    """
-    Assigns a role and extracts the link_id (roll_no).
-    """
     link_id = None 
     role = None
 
-    if email == 'rishithav.cs24@bitsathy.ac.in':
+    # --- Department Staff Emails ---
+    if email == 'mess.staff@bitsathy.ac.in':
+        return 'mess_staff', None
+    elif email == 'boomikas.cs24@bitsathy.ac.in':
+        return 'transport_staff', None
+    elif email == 'electronics.staff@bitsathy.ac.in':
+        return 'electronics_staff', None
+    elif email == 'academic.staff@bitsathy.ac.in':
+        return 'academic_staff', None
+    
+    # --- User Emails ---
+    elif email == 'rishithav.cs24@bitsathy.ac.in':
         role = 'admin'
     elif email.endswith('@parents.bitsathy.ac.in'):
         role = 'parent'
-        # Converts roll_no to UPPERCASE to match database
         link_id = email.split('@')[0].upper() 
     elif email.endswith('@bitsathy.ac.in'):
         role = 'student'
         pass
-    
+        
     return role, link_id
 
 def create_access_token(user_id: str, user_role: str) -> str:
@@ -66,7 +73,7 @@ def create_access_token(user_id: str, user_role: str) -> str:
     expire = datetime.utcnow() + timedelta(days=1)
     to_encode = {
         "sub": user_id,    # The user's unique Google ID
-        "role": user_role, # 'admin', 'parent', or 'student'
+        "role": user_role, # 'admin', 'parent', 'student', or '..._staff'
         "iat": datetime.utcnow(),
         "exp": expire
     }
@@ -76,9 +83,7 @@ def create_access_token(user_id: str, user_role: str) -> str:
 # --- 3. SECURITY DEPENDENCIES ---
 
 def get_current_user_payload(token: str = Depends(security_scheme)) -> dict:
-    """
-    Validates the JWT and returns the full payload.
-    """
+    """Validates the JWT and returns the full payload."""
     try:
         payload = jwt.decode(token.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         if payload.get("sub") is None:
@@ -90,15 +95,11 @@ def get_current_user_payload(token: str = Depends(security_scheme)) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 def get_current_user_id(payload: dict = Depends(get_current_user_payload)) -> str:
-    """
-    For endpoints that just need a valid user (like the chatbot).
-    """
+    """For endpoints that just need a valid user (like the chatbot)."""
     return payload.get("sub")
             
 def get_current_admin_user(payload: dict = Depends(get_current_user_payload)) -> str:
-    """
-    For endpoints that require ADMIN access.
-    """
+    """For endpoints that require ADMIN access."""
     if payload.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Forbidden: Admin access required")
     return payload.get("sub")
@@ -108,9 +109,7 @@ def get_current_admin_user(payload: dict = Depends(get_current_user_payload)) ->
 
 @router.post("/gsi_login")
 async def gsi_login(request: Request, body: GoogleToken):
-    """
-    Handles the Google Sign-In (GSI) credential from the frontend.
-    """
+    """Handles the Google Sign-In (GSI) credential from the frontend."""
     token = body.token
     if not token:
         raise HTTPException(status_code=400, detail="No token provided")
@@ -212,6 +211,9 @@ async def get_user_list(admin_id: str = Depends(get_current_admin_user)):
             cur.close()
             conn.close()
 
+#
+# --- THIS IS THE CORRECTED REWARD POINTS FUNCTION ---
+#
 @router.get("/reward-points")
 async def get_reward_data(payload: dict = Depends(get_current_user_payload)):
     """
@@ -269,7 +271,7 @@ async def get_reward_data(payload: dict = Depends(get_current_user_payload)):
             conn.close()
 
 #
-# --- THIS IS THE ENDPOINT YOUR SERVER IS MISSING ---
+# --- CHAT SESSION ENDPOINTS ---
 #
 @router.get("/chat/sessions")
 async def get_chat_sessions(payload: dict = Depends(get_current_user_payload)):

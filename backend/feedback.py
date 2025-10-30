@@ -7,110 +7,107 @@ from dotenv import load_dotenv
 from twilio.rest import Client
 from auth_routes import get_current_user_id
 
-# --- Load Environment ---
+# (Your imports...)
 load_dotenv()
-
-# --- DB CONFIG ---
-# Get the standard connection string
 DB_URL = os.getenv("DB_URL_STANDARD")
 if not DB_URL:
     raise RuntimeError("DB_URL_STANDARD not set in .env file")
 
-# --- FastAPI Router ---
 router = APIRouter()
 
-# --- Pydantic Model ---
 class FeedbackRequest(BaseModel):
-    question: str # We can reuse 'question' as the key
+    question: str
 
-# --- Helper: DB Connection ---
+# --- (Copied helper functions: get_db_connection, get_username_from_db, send_sms) ---
 def get_db_connection():
-    """Establishes a connection to the PostgreSQL database."""
     try:
-        conn = psycopg2.connect(DB_URL)
-        return conn
+        return psycopg2.connect(DB_URL)
     except Exception as e:
         print(f"Database connection error: {e}")
         raise HTTPException(status_code=500, detail="Database connection error.")
 
-# --- Helper: Fetch username from DB ---
 def get_username_from_db(user_id: str) -> str:
-    """Helper to get username, copied from api_bot.py"""
+    conn = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("SELECT name FROM users WHERE id = %s", (user_id,))
         row = cur.fetchone()
         cur.close()
-        conn.close()
         if row:
             return row[0]
         return "Unknown User"
     except Exception as e:
         print(f"⚠️ Failed to fetch username: {e}")
         return "Unknown User"
+    finally:
+        if conn: conn.close()
 
-# --- Helper: Twilio SMS ---
 def send_sms(to_number: str, message: str):
-    """Helper to send SMS, copied from api_bot.py"""
     try:
         client = Client(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_AUTH_TOKEN"))
         from_number = os.getenv("TWILIO_PHONE_NUMBER")
         client.messages.create(body=message, from_=from_number, to=to_number)
-        print(f"✅ SMS sent to {to_number}: {message}")
+        print(f"✅ SMS alert sent to {to_number}: {message}")
     except Exception as e:
-        # Don't crash the app if SMS fails, just print a warning
-        print(f"⚠️ SMS sending failed: {e}")
+        print(f"⚠️ SMS alert sending failed: {e}")
+# --- (End of helpers) ---
 
 
-# --- Feedback Endpoint ---
 @router.post("/feedback")
 async def send_feedback(request: FeedbackRequest, user_id: str = Depends(get_current_user_id)):
-    """Handles feedback messages — forwards via SMS only, no AI processing."""
     query = request.question.strip()
     if not query:
         raise HTTPException(status_code=400, detail="Feedback message cannot be empty")
 
-    # --- Categorize message ---
+    # --- 1. Categorize message ---
     query_lower = query.lower()
     academic_keywords = ["exam", "subject", "mark", "attendance", "result", "class", "syllabus", "faculty", "assignment", "semester"]
     mess_keywords = ["mess", "food", "canteen", "meal", "dining", "menu", "lunch", "breakfast", "dinner"]
     transport_keywords = ["bus", "transport", "shuttle", "route", "timing", "stop", "vehicle", "parking"]
     electronics_keywords = ["wifi", "internet", "network", "device", "laptop", "printer", "connection"]
 
-    target_number = None
-    category = None
+    target_number = "+919342236331" # Default
+    category = "Academic" # Default
 
-    if any(word in query_lower for word in academic_keywords):
-        target_number = "+919342236331"
-        category = "Academic Feedback"
-    elif any(word in query_lower for word in mess_keywords):
+    if any(word in query_lower for word in mess_keywords):
         target_number = "+919025312830"
-        category = "Mess Feedback"
+        category = "Mess"
     elif any(word in query_lower for word in transport_keywords):
         target_number = "+917339170590"
-        category = "Transport Feedback"
+        category = "Transport"
     elif any(word in query_lower for word in electronics_keywords):
         target_number = "+919363521885"
-        category = "Electronics Feedback"
-    else:
-        target_number = "+919342236331"
-        category = "General Feedback"
+        category = "Electronics"
 
-    # --- Fetch username ---
     username = get_username_from_db(user_id)
-
-    # --- Build SMS message ---
-    sms_message = f"📩 New Feedback Received!\nCategory: {category}\nFrom: {username}\nMessage: {query}"
-
+    conn = None
     try:
-        send_sms(target_number, sms_message)
-        print(f"✅ Feedback SMS sent to {target_number} ({category})")
+        # --- 2. Save to Database ---
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO feedback_tickets (user_id, department, original_message, status)
+            VALUES (%s, %s, %s, 'New')
+            RETURNING ticket_id;
+            """,
+            (user_id, category, query)
+        )
+        new_ticket_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
         
-        return {
-            "answer": "✅ Thank you for your feedback! It has been forwarded to the concerned department."
-        }
+        # --- 3. Send SMS Alert (Now that it's saved) ---
+        sms_message = f"📩 New Feedback Ticket #{new_ticket_id}!\nCategory: {category}\nFrom: {username}\nMessage: {query}"
+        send_sms(target_number, sms_message)
 
+        return {
+            "answer": f"✅ Thank you! Your feedback has been submitted as Ticket #{new_ticket_id}."
+        }
     except Exception as e:
-        print(f"❌ Error sending feedback SMS: {e}")
-        raise HTTPException(status_code=500, detail="Error sending feedback.")
+        if conn: conn.rollback()
+        print(f"❌ Error saving feedback to DB: {e}")
+        raise HTTPException(status_code=500, detail="Error submitting feedback.")
+    finally:
+        if conn: conn.close()

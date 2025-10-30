@@ -1,4 +1,3 @@
-// src/Login.jsx
 import React, { useEffect } from "react";
 import "./Login.css";
 
@@ -20,10 +19,8 @@ function Login({ selectedRole, onBack }) {
           client_id:
             "579116108847-qg7v7hmhmfp098lt886t3gs3l0j25dt8.apps.googleusercontent.com",
           
-          // --- THIS IS THE UPDATED CALLBACK FUNCTION ---
           callback: async (response) => {
             
-            // The 'response.credential' is the Google JWT
             console.log("✅ Google Sign-In successful. Sending token to backend...");
 
             try {
@@ -33,36 +30,36 @@ function Login({ selectedRole, onBack }) {
                 headers: {
                   "Content-Type": "application/json",
                 },
-                // Send the Google token in the body
                 body: JSON.stringify({ token: response.credential }),
               });
 
               // 2. HANDLE THE RESPONSE FROM YOUR SERVER
               if (res.ok) {
-                // Your backend successfully verified the user
                 const data = await res.json(); // { access_token, role, ... }
 
-                // --- THIS IS THE MOST IMPORTANT CHANGE ---
-                // Save YOUR backend's token, not Google's.
-                // This token is what you will use for /bot/ask and /ingest/upload
                 localStorage.setItem('access_token', data.access_token);
-                // ------------------------------------------
                 
-                // You can also save the email or role if your app needs it
-                // localStorage.setItem('user_role', data.role);
-
                 alert(`✅ Login successful! Welcome. Role: ${data.role}`);
 
-                // 3. REDIRECT BASED ON THE ROLE
+                //
+                // --- THIS IS THE CORRECTED REDIRECT LOGIC ---
+                //
                 if (data.role === "admin") {
                   window.location.href = "/admin-dashboard";
                 } else if (data.role === "parent") {
                   window.location.href = "/parent-dashboard";
+                } else if (data.role === "student") {
+                  window.location.href = "/student-dashboard";
+                } else if (data.role.endsWith("_staff")) {
+                  window.location.href = "/department-dashboard";
                 } else {
-                  window.location.href = "/dashboard"; // For "student"
+                  // Fallback for any other recognized role
+                  window.location.href = "/student-dashboard"; 
                 }
+                // --- END OF FIX ---
+
               } else {
-                // Your backend rejected the login (e.g., domain not allowed)
+                // Your backend rejected the login
                 const { detail } = await res.json();
                 alert(`⚠️ Login Failed: ${detail}. Please use an organization email.`);
               }
@@ -102,10 +99,6 @@ function Login({ selectedRole, onBack }) {
       {/* Login Card */}
       <div className="login-card">
         <h2>{roleTitle} Login</h2>
-        
-        {/* Your old form (can be removed if only using Google) */}
-        {/* <form> ... </form> */}
-        {/* <h3 className="or-text">or</h3> */}
         
         <p>Please sign in with your organization's Google account.</p>
         <div id="google-signin"></div>

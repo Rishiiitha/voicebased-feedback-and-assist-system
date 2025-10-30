@@ -13,6 +13,7 @@ from auth_routes import router as auth_router
 from apibot import router as bot_router
 from ingest import router as ingest_router
 from feedback import router as feedback_router
+from department_api import router as department_router # <-- ADD THIS
 # Create the main FastAPI application
 app = FastAPI()
 
@@ -43,7 +44,7 @@ app.include_router(ingest_router, prefix="/ingest")
 
 # This will make your new endpoint available at /bot/feedback
 app.include_router(feedback_router, prefix="/bot", tags=["Feedback"])
-
+app.include_router(department_router) # <-- ADD THIS
 # --- 4. Root Endpoint ---
 @app.get("/")
 def read_root():

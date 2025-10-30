@@ -15,8 +15,26 @@ if not DB_URL:
 # --- All the SQL commands to build your database ---
 SQL_COMMANDS = [
     """
-    -- Create the ENUM type for user roles
-    CREATE TYPE user_role AS ENUM ('admin', 'parent', 'student');
+    -- Create the ENUM type for user roles (if it doesn't exist)
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+            CREATE TYPE user_role AS ENUM ('admin', 'parent', 'student');
+        END IF;
+    END$$;
+    """,
+    """
+    -- Add new department roles (SAFE TO RUN MULTIPLE TIMES)
+    ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'mess_staff';
+    """,
+    """
+    ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'transport_staff';
+    """,
+    """
+    ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'electronics_staff';
+    """,
+    """
+    ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'academic_staff';
     """,
     """
     -- 1. Table for User Logins
@@ -79,20 +97,32 @@ SQL_COMMANDS = [
         roll_no TEXT NOT NULL UNIQUE
     );
     """,
-    
-    # --- *** FIX: MOVED INDEXES TO SEPARATE COMMANDS *** ---
-    
     """
-    -- 7. Add Index for users roll_no
+    -- 7. Table for Feedback Tickets
+    CREATE TABLE IF NOT EXISTS feedback_tickets (
+        ticket_id SERIAL PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        department TEXT NOT NULL,
+        original_message TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'New', -- 'New', 'In Progress', 'Resolved'
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP WITH TIME ZONE,
+        resolution_message TEXT 
+    );
+    """,
+    
+    # --- Indexes (Moved to the end) ---
+    """
     CREATE INDEX IF NOT EXISTS idx_users_roll_no ON users(roll_no);
     """,
     """
-    -- 8. Add Index for chat_sessions user_id
     CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON chat_sessions(user_id);
     """,
     """
-    -- 9. Add Index for student_directory roll_no
     CREATE INDEX IF NOT EXISTS idx_student_directory_roll_no ON student_directory(roll_no);
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_feedback_tickets_department ON feedback_tickets(department, status);
     """
 ]
 
@@ -109,14 +139,14 @@ def initialize_database():
             try:
                 cur.execute(command)
                 # Get the first important line of the command for logging
-                log_line = command.strip().splitlines()[1].strip()
+                log_line = command.strip().splitlines()[0].strip()
                 print(f"Successfully executed: {log_line}...")
             except psycopg2.Error as e:
-                # 42P07 = duplicate_table, 42710 = duplicate_object (for the ENUM)
+                # 42P07 = duplicate_table, 42710 = duplicate_object/type
                 if e.pgcode in ('42P07', '42710'):
-                    log_line = command.strip().splitlines()[1].strip()
+                    log_line = command.strip().splitlines()[0].strip()
                     print(f"Skipping (already exists): {log_line}...")
-                    conn.rollback() # Need to rollback to clear the error
+                    conn.rollback() # Need to rollback to clear the error for this command
                 else:
                     print(f"--- ERROR EXECUTING COMMAND ---")
                     print(command)
@@ -124,19 +154,16 @@ def initialize_database():
                     print(f"---------------------------------")
                     raise e
         
-        conn.commit()
+        conn.commit() # Commit all successful changes at the end
         cur.close()
         
         print("\n✅ Database initialization complete! All tables are ready.")
-        print("You can now run 'uvicorn main:app --reload'")
 
     except Exception as e:
-        if conn:
-            conn.rollback() # Rollback all changes on any error
+        if conn: conn.rollback() # Rollback all changes on any error
         print(f"❌ FATAL ERROR during initialization: {e}")
     finally:
-        if conn:
-            conn.close()
+        if conn: conn.close()
 
 if __name__ == "__main__":
     initialize_database()
