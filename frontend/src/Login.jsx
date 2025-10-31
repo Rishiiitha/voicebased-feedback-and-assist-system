@@ -53,8 +53,9 @@ function Login({ selectedRole, onBack }) {
                 } else if (data.role.endsWith("_staff")) {
                   window.location.href = "/department-dashboard";
                 } else {
-                  // Fallback for any other recognized role
-                  window.location.href = "/student-dashboard"; 
+                  // Fallback just in case
+                  alert("Login successful, but role is not recognized.");
+                  window.location.href = "/";
                 }
                 // --- END OF FIX ---
 
@@ -87,19 +88,29 @@ function Login({ selectedRole, onBack }) {
     return () => {
       document.body.removeChild(script);
     };
-  }, [selectedRole, roleTitle]);
+  }, [selectedRole, onBack, roleTitle]); // Added onBack and roleTitle to dependency array
 
   return (
     <div className="login-body">
-      {/* Back button */}
       <button className="global-back-button" onClick={onBack} type="button">
         <span className="back-arrow">←</span> Back
       </button>
 
-      {/* Login Card */}
       <div className="login-card">
-        <h2>{roleTitle} Login</h2>
-        
+        {/* Title was hardcoded, now it uses the prop */}
+        <h2>{roleTitle} Login</h2> 
+        <hr className="divider" />
+
+        {/* This form is not used, but we'll leave it */}
+        <form className="login-form">
+          <input type="text" placeholder="Username" />
+          <input type="password" placeholder="Password" />
+          <button type="submit" className="login-btn">
+            Login
+          </button>
+        </form>
+
+        <div className="or-text">or</div>
         <p>Please sign in with your organization's Google account.</p>
         <div id="google-signin"></div>
       </div>

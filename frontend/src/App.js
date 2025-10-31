@@ -7,30 +7,35 @@ import {
 } from 'react-router-dom';
 
 // --- 1. IMPORT ALL YOUR PAGE COMPONENTS ---
-import Dashboard from './Dashboard.jsx'; // Your landing/role selection page
+import Dashboard from './Dashboard.jsx'; // Your new default landing page
 import Login from './Login.jsx';
-import MainDashboard from './MainDashboard.jsx'; // Your new Parent/Student UI
+import MainDashboard from './MainDashboard.jsx'; // The Parent/Student UI
 import AdminDashboard from './AdminDashboard.jsx';
 import DepartmentDashboard from './DepartmentDashboard.jsx';
-import IntroPage from './IntroPage.jsx';
-import FeedbackTab from './FeedbackTab.jsx'; // The component, not a page
+import IntroPage from './IntroPage.jsx'; // The "magical" page
 
 function App() {
   const [selectedRole, setSelectedRole] = useState(null);
 
   // --- 2. WRAPPER COMPONENTS ---
 
-  // Home (Landing page) - This seems to be your IntroPage now
-  // I will route "/" to IntroPage instead
-  
-  // Role Selection Page (This might be your old "Dashboard.jsx")
-  function RoleWrapper() {
+  // This HomeWrapper renders your new default page (Dashboard.jsx)
+  function HomeWrapper() {
     const navigate = useNavigate();
-    const handleRoleSelect = (role) => {
-      setSelectedRole(role);
-      navigate('/login'); 
+
+    // This function now handles all clicks from Dashboard.jsx
+    const handleNavigate = (action) => {
+      if (action === "user") {
+        // "Get Started" button -> Go to IntroPage
+        navigate("/intro"); 
+      } else {
+        // "Login" or "Signup" button
+        setSelectedRole(action); // 'action' will be 'login' or 'signup'
+        navigate("/login");
+      }
     };
-    return <Dashboard onNavigateToLogin={handleRoleSelect} />;
+
+    return <Dashboard onNavigateToLogin={handleNavigate} />;
   }
 
   // Login page
@@ -38,7 +43,7 @@ function App() {
     const navigate = useNavigate();
     const handleBack = () => {
       setSelectedRole(null);
-      navigate('/'); // Navigate back to the Intro page
+      navigate('/'); // Navigate back to the new default page
     };
     return <Login selectedRole={selectedRole} onBack={handleBack} />;
   }
@@ -47,38 +52,24 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Main Landing Page */}
-        <Route path="/" element={<IntroPage />} />
+        {/* --- THIS IS THE FIX --- */}
+        {/* 1. Dashboard.jsx is now the default page at "/" */}
+        <Route path="/" element={<HomeWrapper />} />
 
-        {/* Page to select role (if you still use it) */}
-        <Route path="/select-role" element={<RoleWrapper />} />
-
-        {/* Login Page */}
+        {/* 2. The "magical" intro page is now at "/intro" */}
+        <Route path="/intro" element={<IntroPage />} />
+        
+        {/* --- Your Existing Routes --- */}
         <Route path="/login" element={<LoginWrapper />} />
+        
+        {/* Dashboards for logged-in users */}
+        <Route path="/parent-dashboard" element={<MainDashboard userRole="parent" />} />
+        <Route path="/student-dashboard" element={<MainDashboard userRole="student" />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/department-dashboard" element={<DepartmentDashboard />} />
 
-        {/* --- Dashboard Routes (MUST match Login.jsx redirects) --- */}
-        <Route 
-          path="/parent-dashboard" 
-          element={<MainDashboard userRole="parent" />} 
-        />
-        <Route 
-          path="/student-dashboard" 
-          element={<MainDashboard userRole="student" />} 
-        />
-        <Route 
-          path="/admin-dashboard" 
-          element={<AdminDashboard />} 
-        />
-        <Route 
-          path="/department-dashboard" 
-          element={<DepartmentDashboard />} 
-        />
-
-        {/* This route is no longer needed as a page */}
-        {/* <Route path="/feedback" element={<FeedbackTab />} /> */}
-
-        {/* Fallback Route: Send all unknown URLs to the intro page */}
-        <Route path="*" element={<IntroPage />} />
+        {/* Fallback Route: Send all unknown URLs back to the home page */}
+        <Route path="*" element={<HomeWrapper />} />
       </Routes>
     </Router>
   );

@@ -322,3 +322,13 @@
   max-height: 400px;
   overflow-y: auto;
 }
+.msg.listening-indicator {
+  background: transparent;
+  border: 1px dashed rgba(18, 183, 255, 0.3);
+  color: var(--neon-sky);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font-style: italic;
+}

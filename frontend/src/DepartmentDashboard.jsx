@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './AdminDashboard.css'; // Reuse admin styles
-import './DepartmentDashboard.css'; // Add new styles
+import './DepartmentDashboard.css'; // Your specific styles
 
 const API_URL = "http://127.0.0.1:8000";
 
-// --- (Copy helper functions from AdminDashboard) ---
+// --- Helper Functions ---
 const getAuthToken = () => {
     const token = localStorage.getItem("access_token");
     if (!token) { handleLogout(); return null; }
@@ -88,9 +88,15 @@ function DepartmentDashboard() {
 
   const openReplyModal = (ticket) => {
     setSelectedTicket(ticket);
-    setReplyMessage(""); // Clear old message
+    // Pre-fill message if it's "In Progress"
+    if (ticket.status === 'In Progress') {
+        setReplyMessage(ticket.resolution_message || "");
+    } else {
+        setReplyMessage("");
+    }
   };
 
+  // Filter tickets into separate arrays
   const newTickets = tickets.filter(t => t.status === 'New');
   const inProgressTickets = tickets.filter(t => t.status === 'In Progress');
   const resolvedTickets = tickets.filter(t => t.status === 'Resolved');
@@ -106,6 +112,7 @@ function DepartmentDashboard() {
         {loading && <p>Loading tickets...</p>}
         {error && <p className="admin-message error">{error}</p>}
         
+        {/* --- Card 1: New Tickets --- */}
         <div className="admin-card">
           <h3>New Tickets ({newTickets.length})</h3>
           <table className="user-table">
@@ -120,7 +127,7 @@ function DepartmentDashboard() {
               </tr>
             </thead>
             <tbody>
-              {newTickets.map(ticket => (
+              {newTickets.length > 0 ? newTickets.map(ticket => (
                 <tr key={ticket.ticket_id}>
                   <td>{ticket.ticket_id}</td>
                   <td>{ticket.user_name || ticket.user_email}</td>
@@ -131,19 +138,81 @@ function DepartmentDashboard() {
                     <button onClick={() => openReplyModal(ticket)}>Reply / Resolve</button>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr><td colSpan="6" style={{textAlign: 'center'}}>No new tickets.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
 
+        {/* --- Card 2: In Progress Tickets (NEW) --- */}
         <div className="admin-card">
           <h3>In Progress ({inProgressTickets.length})</h3>
-          {/* (Table for In Progress tickets - same structure) */}
+          <table className="user-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>From</th>
+                <th>Message</th>
+                <th>Status</th>
+                <th>Received</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inProgressTickets.length > 0 ? inProgressTickets.map(ticket => (
+                <tr key={ticket.ticket_id}>
+                  <td>{ticket.ticket_id}</td>
+                  <td>{ticket.user_name || ticket.user_email}</td>
+                  <td className="ticket-message">{ticket.original_message}</td>
+                  <td>
+                    <span className="status-dot in-progress">{ticket.status}</span>
+                    <br/>
+                    <small>"{ticket.resolution_message}"</small>
+                  </td>
+                  <td>{new Date(ticket.created_at).toLocaleString()}</td>
+                  <td>
+                    <button onClick={() => openReplyModal(ticket)}>Update / Resolve</button>
+                  </td>
+                </tr>
+              )) : (
+                <tr><td colSpan="6" style={{textAlign: 'center'}}>No tickets in progress.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
+        {/* --- Card 3: Resolved Tickets (NEW) --- */}
         <div className="admin-card">
           <h3>Resolved ({resolvedTickets.length})</h3>
-          {/* (Table for Resolved tickets - same structure) */}
+          <table className="user-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>From</th>
+                <th>Message</th>
+                <th>Resolution</th>
+                <th>Resolved On</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resolvedTickets.length > 0 ? resolvedTickets.map(ticket => (
+                <tr key={ticket.ticket_id}>
+                  <td>{ticket.ticket_id}</td>
+                  <td>{ticket.user_name || ticket.user_email}</td>
+                  <td className="ticket-message">{ticket.original_message}</td>
+                  <td>
+                    <span className="status-dot online">{ticket.status}</span>
+                    <br/>
+                    <small>"{ticket.resolution_message}"</small>
+                  </td>
+                  <td>{new Date(ticket.resolved_at).toLocaleString()}</td>
+                </tr>
+              )) : (
+                <tr><td colSpan="5" style={{textAlign: 'center'}}>No resolved tickets.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
         
       </main>
@@ -152,22 +221,22 @@ function DepartmentDashboard() {
       {selectedTicket && (
         <div className="modal-backdrop">
           <div className="modal-content admin-card">
-            <h3>Resolve Ticket #{selectedTicket.ticket_id}</h3>
+            <h3>Update Ticket #{selectedTicket.ticket_id}</h3>
             <p><strong>From:</strong> {selectedTicket.user_name || selectedTicket.user_email}</p>
             <p><strong>Original Message:</strong> {selectedTicket.original_message}</p>
             
             <textarea
               placeholder="Type your custom reply here..."
-              value={replyMessage}
+              defaultValue={selectedTicket.resolution_message || ""}
               onChange={(e) => setReplyMessage(e.target.value)}
               style={{ width: '100%', minHeight: '100px', margin: '10px 0' }}
             />
             
             <div className="modal-actions">
-              <button onClick={() => handleUpdateStatus(selectedTicket.ticket_id, "We are working on your issue. It will be resolved soon.", "In Progress")}>
+              <button onClick={() => handleUpdateStatus(selectedTicket.ticket_id, replyMessage || "We are working on your issue. It will be resolved soon.", "In Progress")}>
                 Mark "In Progress"
               </button>
-              <button className="delete-btn" onClick={() => handleUpdateStatus(selectedTicket.ticket_id, "Your issue has been resolved.", "Resolved")}>
+              <button className="delete-btn" onClick={() => handleUpdateStatus(selectedTicket.ticket_id, replyMessage || "Your issue has been resolved.", "Resolved")}>
                 Mark "Resolved"
               </button>
               <button 

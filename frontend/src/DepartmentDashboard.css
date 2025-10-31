@@ -27,3 +27,8 @@
     gap: 10px;
     margin-top: 10px;
 }
+/* Add this to DepartmentDashboard.css */
+
+.status-dot.in-progress {
+  background-color: #ffc107; /* Yellow for 'In Progress' */
+}

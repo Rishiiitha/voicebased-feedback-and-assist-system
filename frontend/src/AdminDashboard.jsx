@@ -376,6 +376,7 @@ function AdminDashboard() {
                     <th>Email</th>
                     <th>Role</th>
                     <th>Status</th>
+                    <th>Last Login</th> 
                   </tr>
                 </thead>
                 <tbody>
@@ -386,6 +387,9 @@ function AdminDashboard() {
                       <td>
                         <span className={`status-dot ${user.status.toLowerCase()}`}></span>
                         {user.status}
+                      </td>
+                      <td>
+                       {user.last_login_at ? new Date(user.last_login_at).toLocaleString() : 'Never'}
                       </td>
                     </tr>
                   ))}
