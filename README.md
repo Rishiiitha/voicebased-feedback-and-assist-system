@@ -4,8 +4,8 @@
 
 By fusing **Retrieval-Augmented Generation (RAG)** with structured SQL queries, this system doesn't just "match keywords"—it reads uploaded PDFs, understands context, checks your grades, and learns your preferences to deliver a hyper-personalized campus experience.
 
-![Screenshot](<img width="1920" height="1017" alt="Screenshot (602)" src="https://github.com/user-attachments/assets/78f3f98a-c5a4-464f-a038-a4bc0f30e112" />
-)
+![welcome](welcome_page.png)
+
 
 ---
 
@@ -18,8 +18,8 @@ We use **LangChain** and **Ollama** to turn your uploaded PDFs into a conversati
 
 ### 🛡️ **Fort Knox Security**
 Secure, token-based entry using **Google Sign-In (GSI)** and **JWTs**. Only authorized students get past the velvet rope.
-![Image](<img width="1581" height="740" alt="image" src="https://github.com/user-attachments/assets/dd3c150d-27cd-4691-8475-8513440c5ed2" />
-)
+
+![login](login.png)
 
 
 ### ⚡ **Vector Recall**
@@ -29,17 +29,15 @@ Powered by **PostgreSQL + `pgvector`**. We store document embeddings to find the
 The bot is ambidextrous:
 1.  **Unstructured:** Reads PDFs for general info.
 2.  **Structured:** Queries SQL for real-time *CGPA*, *Attendance*, and *Reward Points*.
-   ![Image](<img width="1600" height="756" alt="Untitled design" src="https://github.com/user-attachments/assets/441d61ef-6e8e-4bfa-a6ae-bd3d557930a2" />
-)
+ ![User](User.png)
+
 
 
 ### 🕵️ **Preference Learning**
 The bot pays attention. It automatically extracts and remembers user preferences from chat history to make every interaction smoother than the last.
 
-![Image](![fe25f154-ab55-4c97-9d97-6f5a5b42d1b0](https://github.com/user-attachments/assets/291d6ec8-676e-40ba-a85b-8f47603417a9)
-)
+![data](data_management.png)
 
-)
 
 ---
 
