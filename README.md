@@ -19,7 +19,7 @@ We use **LangChain** and **Ollama** to turn your uploaded PDFs into a conversati
 ### 🛡️ **Fort Knox Security**
 Secure, token-based entry using **Google Sign-In (GSI)** and **JWTs**. Only authorized students get past the velvet rope.
 
-![login](login.png)
+![login](login_page.png)
 
 
 ### ⚡ **Vector Recall**
@@ -91,20 +91,20 @@ Create a `.env` file in the root. Fills in the blanks below:
 
 ```env
 # 🗄️ Database Coordinates
-GOOGLE_CLIENT_ID=579116108847-qg7v7hmhmfp098lt886t3gs3l0j25dt8.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
-JWT_SECRET_KEY=iamthebrilliantoneinthehallicanbethebest
+GOOGLE_CLIENT_ID=Your_client_id
+GOOGLE_CLIENT_SECRET=Your_client_secret_key
+JWT_SECRET_KEY=Your_client_secret_key
 
 
 
-TWILIO_ACCOUNT_SID=ACa2bfedb683f2edd41ace235d78fafbee
-TWILIO_AUTH_TOKEN=182e99e7d5ca6bbb817886cf6d3f6409
-TWILIO_PHONE_NUMBER=+16209385396
+TWILIO_ACCOUNT_SID=Your_account_SID
+TWILIO_AUTH_TOKEN=Your_auth_token
+TWILIO_PHONE_NUMBER=Your_twilio_phone_numner
 string= postgresql://neondb_owner:npg_ZvoFqbNQiA09@ep-divine-base-ah4xsw6j-pooler.c-3.us-east-1.aws.neon.tech/Knowledge_base?sslmode=require&channel_binding=require
 
 DB_URL_STANDARD=postgresql://neondb_owner:npg_ZvoFqbNQiA09@ep-divine-base-ah4xsw6j-pooler.c-3.us-east-1.aws.neon.tech/Knowledge_base?sslmode=require&channel_binding=require
 
 DB_URL_SQLALCHEMY=postgresql+psycopg://neondb_owner:npg_ZvoFqbNQiA09@ep-divine-base-ah4xsw6j-pooler.c-3.us-east-1.aws.neon.tech/Knowledge_base?sslmode=require&channel_binding=require
 
-EMAIL_ADDRESS=your email
-EMAIL_PASSWORD=password
+EMAIL_ADDRESS=your_email_id
+EMAIL_PASSWORD=your_password
